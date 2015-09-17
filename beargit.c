@@ -78,7 +78,7 @@ int beargit_add(const char* filename) {
       fclose(findex);
       fclose(fnewindex);
       fs_rm(".beargit/.newindex");
-      return 3;
+    return 3;
     }
 
     fprintf(fnewindex, "%s\n", line);
@@ -101,8 +101,19 @@ int beargit_add(const char* filename) {
 
 int beargit_status() {
   /* COMPLETE THE REST */
-  printf('hi');
-
+  FILE* findex = fopen(".beargit/.index", "r");
+  char line[FILENAME_SIZE];
+  fprintf(stdout, "Tracked files:\n");
+  int count = 0;
+  while(fgets(line, sizeof(line), findex)) {
+    count++;
+    strtok(line, "\n");
+    fprintf(stdout, "%s\n", line);
+  }
+  fprintf(stdout, "\n There are %d files total.\n", i);
+  
+  fclose(findex);
+  
   return 0;
 }
 
