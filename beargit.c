@@ -78,7 +78,7 @@ int beargit_add(const char* filename) {
       fclose(findex);
       fclose(fnewindex);
       fs_rm(".beargit/.newindex");
-    return 3;
+      return 3;
     }
 
     fprintf(fnewindex, "%s\n", line);
@@ -100,17 +100,17 @@ int beargit_add(const char* filename) {
  */
 
 int beargit_status() {
-  /* COMPLETE THE REST */
   FILE* findex = fopen(".beargit/.index", "r");
   char line[FILENAME_SIZE];
-  fprintf(stdout, "Tracked files:\n");
+  fprintf(stdout, "Tracked files:\n\n");
+
   int count = 0;
   while(fgets(line, sizeof(line), findex)) {
     count++;
     strtok(line, "\n");
     fprintf(stdout, "%s\n", line);
   }
-  fprintf(stdout, "\n There are %d files total.\n", i);
+  fprintf(stdout, "\nThere are %d files total.\n", count);
   
   fclose(findex);
   
@@ -124,9 +124,31 @@ int beargit_status() {
  */
 
 int beargit_rm(const char* filename) {
-  /* COMPLETE THE REST */
+  FILE* findex = fopen(".beargit/.index", "r");
+  FILE *fnewindex = fopen(".beargit/.newindex", "w");
 
-  return 0;
+  int len1 = 0;
+  int len2 = 0;
+  char line[FILENAME_SIZE];
+  while(fgets(line, sizeof(line), findex)) {
+    strtok(line, "\n");
+    if (strcmp(line, filename) != 0) {
+      fprintf(fnewindex, "%s\n", line);
+      len1++;
+    }
+    len2++;
+  }
+  if (len1 == len2) {
+    fprintf(stderr, "ERROR:  File %s not tracked.\n", filename);
+    fs_rm(".beargit/.newindex");
+    return 1;
+  }
+  else {
+    fclose(findex);
+    fclose(fnewindex);
+    fs_mv(".beargit/.newindex", ".beargit/.index");
+    return 0;
+  }
 }
 
 /* beargit commit -m <msg>
