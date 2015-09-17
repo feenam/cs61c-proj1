@@ -133,45 +133,243 @@ void simple_log_test(void)
     free_commit_list(&commit_list);
 }
 
+
+/* Simple test of the Beargit Status Command.
+ * Reads the data previously written by testFPRINTF()
+ * and checks whether the expected characters are present.
+ * Must be run after testFPRINTF().
+ */
+void empty_status_test(void)
+{
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_init();
+    retval = beargit_status();
+    CU_ASSERT(0==retval);
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"Tracked files:", strlen("Tracked files:")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 0 files total.", strlen("There are 0 files total.")));
+
+    CU_ASSERT_PTR_NULL(fgets(line, LINE_SIZE, fstdout));
+    // It's the end of output
+    CU_ASSERT(feof(fstdout));
+    fclose(fstdout);
+
+}
+
+/* Simple test of the Beargit Status Command.
+ * Reads 
+ */
+void oneFile_status_test(void)
+{       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+ 
+    // beargit_init();
+    beargit_add("test.txt");
+   
+    beargit_status();
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    int i = 0;
+    while (i++ < 4) fgets(line, LINE_SIZE, fstdout);
+    
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"Tracked files:", strlen("Tracked files:")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"test.txt", strlen("test.txt")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 1 files total.", strlen("There are 1 files total.")));
+
+    CU_ASSERT_PTR_NULL(fgets(line, LINE_SIZE, fstdout));
+    // It's the end of output
+    CU_ASSERT(feof(fstdout));
+    fclose(fstdout);
+}
+
+
+/* Simple test of the Beargit Status Command.
+ * Reads 
+ */
+void twoFile_status_test(void)
+{       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+ 
+    beargit_add("test.txt");
+    beargit_add("test2.txt");
+   
+    beargit_status();
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    int i = 0;
+    while (i++ < 9) fgets(line, LINE_SIZE, fstdout);
+    
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"Tracked files:", strlen("Tracked files:")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"test.txt", strlen("test.txt")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"test2.txt", strlen("test2.txt")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 2 files total.", strlen("There are 2 files total.")));
+
+    CU_ASSERT_PTR_NULL(fgets(line, LINE_SIZE, fstdout));
+    // It's the end of output
+    CU_ASSERT(feof(fstdout));
+    fclose(fstdout);
+}
+
+/* Simple test of the Beargit Status Command.
+ * Reads 
+ */
+void oneFile_rm_test(void)
+{       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_init();
+
+    beargit_add("test.txt");
+    retval = beargit_rm("test.txt");
+    CU_ASSERT(0==retval);
+
+    beargit_status();
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    int i = 0;
+    while (i++ < 3) fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 0 files total.", strlen("There are 0 files total.")));
+
+    fclose(fstdout);
+}
+
+
 /* The main() function for setting up and running the tests.
  * Returns a CUE_SUCCESS on successful running, another
  * CUnit error code on failure.
  */
 int cunittester()
 {
-   CU_pSuite pSuite = NULL;
-   CU_pSuite pSuite2 = NULL;
+   CU_pSuite pSuite = NULL;  /* Sample code provided with skeleton */
+   CU_pSuite pSuite2 = NULL; /* Suite of testing for the STATUS command */
+   CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
+
+   // CU_pSuite pSuite2 = NULL;  /* Sample code provided with skeleton */
+
 
    /* initialize the CUnit test registry */
    if (CUE_SUCCESS != CU_initialize_registry())
       return CU_get_error();
 
-   /* add a suite to the registry */
-   pSuite = CU_add_suite("Suite_1", init_suite, clean_suite);
+
+///////////////
+
+   /* add SAMPLE Suite #1 to the registry */
+   pSuite = CU_add_suite("Sample Suite_1", init_suite, clean_suite);
    if (NULL == pSuite) {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-   /* Add tests to the Suite #1 */
+   /* Add tests to the SAMPLE Suite #1 */
    if (NULL == CU_add_test(pSuite, "Simple Test #1", simple_sample_test))
    {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-   pSuite2 = CU_add_suite("Suite_2", init_suite, clean_suite);
+///////////////
+
+   /* add STATUS Suite to the registry */
+   pSuite2 = CU_add_suite("Status Suite", init_suite, clean_suite);
    if (NULL == pSuite2) {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-   /* Add tests to the Suite #2 */
-   if (NULL == CU_add_test(pSuite2, "Log output test", simple_log_test))
+   /* Add tests to the STATUS Suite */
+   if ((NULL == CU_add_test(pSuite2, "Status Test #1: empty test", empty_status_test)) ||
+       (NULL == CU_add_test(pSuite2, "Status Test #2: one file test", oneFile_status_test)) ||
+       (NULL == CU_add_test(pSuite2, "Status Test #3: two files test", twoFile_status_test)))
    {
       CU_cleanup_registry();
       return CU_get_error();
    }
+
+///////////////
+
+   /* add RM Suite to the registry */
+   pSuite3 = CU_add_suite("RM Suite", init_suite, clean_suite);
+   if (NULL == pSuite3) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+   /* Add tests to the RM Suite */
+   if (NULL == CU_add_test(pSuite3, "RM Test #1: one file to remove test", oneFile_rm_test))
+    /* Edge cases still to test: No files to remove, file isn't being tracked, */
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+
+
+
+   // /* add sample Suite #2 to the registry */
+   // pSuite2 = CU_add_suite("Sample Suite_2", init_suite, clean_suite);
+   // if (NULL == pSuite2) {
+   //    CU_cleanup_registry();
+   //    return CU_get_error();
+   // }
+
+   // /* Add tests to the sample Suite #2 */
+   // if (NULL == CU_add_test(pSuite2, "Log output test", simple_log_test))
+   // {
+   //    CU_cleanup_registry();
+   //    return CU_get_error();
+   // }
+
+
 
    /* Run all tests using the CUnit Basic interface */
    CU_basic_set_mode(CU_BRM_VERBOSE);
@@ -179,4 +377,5 @@ int cunittester()
    CU_cleanup_registry();
    return CU_get_error();
 }
+
 

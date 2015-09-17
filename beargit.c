@@ -100,20 +100,6 @@ int beargit_add(const char* filename) {
  */
 
 int beargit_status() {
-<<<<<<< HEAD
-  /* COMPLETE THE REST */
-  FILE* findex = fopen(".beargit/.index", "r");
-  char line[FILENAME_SIZE];
-  fprintf(stdout, "Tracked files:\n");
-  int i = 0;
-  while(fgets(line, sizeof(line), findex)) {
-    i++;
-    strtok(line, "\n");
-    fprintf(stdout, "%s\n", line);
-  }
-  fprintf(stdout, "\n There are %d files total.\n", i);
-      
-=======
   FILE* findex = fopen(".beargit/.index", "r");
   char line[FILENAME_SIZE];
   fprintf(stdout, "Tracked files:\n\n");
@@ -128,7 +114,6 @@ int beargit_status() {
   
   fclose(findex);
   
->>>>>>> 7cf2a32a4c08a2fe7fad51eb684d947294c2bf5d
   return 0;
 }
 
@@ -271,40 +256,43 @@ int beargit_checkout(const char* arg, int new_branch) {
   char current_branch[BRANCHNAME_SIZE];
   read_string_from_file(".beargit/.current_branch", "current_branch", BRANCHNAME_SIZE);
 
-  // If not detached, leave the current branch by storing the current HEAD into that branch's file...
+  // If not detached, update the current branch by storing the current HEAD into that branch's file...
   if (strlen(current_branch)) {
     char current_branch_file[BRANCHNAME_SIZE+50];
     sprintf(current_branch_file, ".beargit/.branch_%s", current_branch);
     fs_cp(".beargit/.prev", current_branch_file);
   }
 
-   // Check whether the argument is a commit ID. If yes, we just change to detached mode
+  // Check whether the argument is a commit ID. If yes, we just stay in detached mode
   // without actually having to change into any other branch.
   if (is_it_a_commit_id(arg)) {
     char commit_dir[FILENAME_SIZE] = ".beargit/";
     strcat(commit_dir, arg);
-    // ...and setting the current branch to none (i.e., detached).
+    if (!fs_check_dir_exists(commit_dir)) {
+      fprintf(stderr, "ERROR:  Commit %s does not exist.\n", arg);
+      return 1;
+    }
+
+    // Set the current branch to none (i.e., detached).
     write_string_to_file(".beargit/.current_branch", "");
 
     return checkout_commit(arg);
   }
 
-
+  // Just a better name, since we now know the argument is a branch name.
+  const char* branch_name = arg;
 
   // Read branches file (giving us the HEAD commit id for that branch).
-  int branch_exists = (get_branch_number(arg) >= 0);
+  int branch_exists = (get_branch_number(branch_name) >= 0);
 
   // Check for errors.
   if (!(!branch_exists || !new_branch)) {
-    fprintf(stderr, "ERROR:  A branch named %s already exists.\n", arg);
+    fprintf(stderr, "ERROR:  A branch named %s already exists.\n", branch_name);
     return 1;
   } else if (!branch_exists && new_branch) {
-    fprintf(stderr, "ERROR:  No branch or commit %s exists.\n", arg);
+    fprintf(stderr, "ERROR: No branch %s exists\n", branch_name);
     return 1;
   }
-
-  // Just a better name, since we now know the argument is a branch name.
-  const char* branch_name = arg;
 
   // File for the branch we are changing into.
   char* branch_file = ".beargit/.branch_";
