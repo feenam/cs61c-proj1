@@ -101,7 +101,17 @@ int beargit_add(const char* filename) {
 
 int beargit_status() {
   /* COMPLETE THE REST */
-
+  FILE* findex = fopen(".beargit/.index", "r");
+  char line[FILENAME_SIZE];
+  fprintf(stdout, "Tracked files:\n");
+  int i = 0;
+  while(fgets(line, sizeof(line), findex)) {
+    i++;
+    strtok(line, "\n");
+    fprintf(stdout, "%s\n", line);
+  }
+  fprintf(stdout, "\n There are %d files total.\n", i);
+      
   return 0;
 }
 
