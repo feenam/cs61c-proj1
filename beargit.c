@@ -160,7 +160,16 @@ int beargit_rm(const char* filename) {
 const char* go_bears = "THIS IS BEAR TERRITORY!";
 
 int is_commit_msg_ok(const char* msg) {
-  /* COMPLETE THE REST */
+  int i = 0;
+  char msg_char = 0; 
+  char go_char = 0;
+  do {
+    msg_char = msg[i];
+    go_char = go_bears[i];
+    if (msg_char != go_char) return 0;
+    i++;
+  } while (msg_char != '\0' || go_char != '\0'); 
+  if (msg_char == '\0' && go_char == '\0') return 1;
   return 0;
 }
 
@@ -173,7 +182,31 @@ int is_commit_msg_ok(const char* msg) {
 
 void next_commit_id(char* commit_id) {
      /* COMPLETE THE REST */
+  FILE* fprevCommit = fopen(".beargit/.prev", "r");
+  FILE* fbranch_name = fopen(".beargit/.current_branch", "r");
+  FILE *fnewCommit = fopen(".beargit/.newCommit", "w");
+
+  char line[COMMIT_ID_SIZE];
+  char branch_name[COMMIT_ID_SIZE];
+  char dst[SHA_HEX_BYTES + 1];
+
+  fgets(line, sizeof(line), fprevCommit);
+  strtok(line, "\n");
+
+  fgets(branch_name, sizeof(branch_name), fbranch_name);
+  strtok(branch_name, "\n");
+  
+  strcat(line, branch_name);
+      fprintf(stdout, "\n%s sent to cryptohash.\n", line);     /* DELETE ME WHEN WORKING*/
+  
+  cryptohash(line, dst);
+      fprintf(stdout, "\n%s received from cryptohash. \n", dst);     /* DELETE ME WHEN WORKING*/
+
+  fprintf(fnewCommit, "%s\n", dst);
+  fclose(fprevCommit);
+  fclose(fnewCommit);
 }
+
 
 int beargit_commit(const char* msg) {
   if (!is_commit_msg_ok(msg)) {
@@ -182,10 +215,27 @@ int beargit_commit(const char* msg) {
   }
 
   char commit_id[COMMIT_ID_SIZE];
+
   read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
   next_commit_id(commit_id);
 
+  FILE *fpassedCommit = fopen(".beargit/.newCommit", "r");
+  char new_hash[COMMIT_ID_SIZE];
+  fgets(new_hash, sizeof(new_hash), fpassedCommit);
+  strtok(new_hash, "\n");
+
+  fprintf(stdout, "\n%s received from next_commit_id. \n", new_hash);     /* DELETE ME WHEN WORKING*/
+  
+  fclose(fpassedCommit);
   /* COMPLETE THE REST */
+
+ 
+
+
+  // if (branch_head_commit_id == commit_id) {
+    // WRITE A CHECK TO SEE IF THE BRANCH HEAD IS THE SAME AS CURRENT COMMIT ID
+    // fprintf(stderr, "ERROR:  Need to be on HEAD of a branch to commit");
+  // }
 
   return 0;
 }
