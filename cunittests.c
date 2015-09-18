@@ -180,6 +180,8 @@ void oneFile_status_test(void)
     char line[LINE_SIZE];
  
     // beargit_init();
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
     beargit_add("test.txt");
    
     beargit_status();
@@ -219,7 +221,11 @@ void twoFile_status_test(void)
 {       
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
- 
+    
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
+    FILE* test2 = fopen("test2.txt", "w");
+    fclose(test2);
     beargit_add("test.txt");
     beargit_add("test2.txt");
    
@@ -266,6 +272,8 @@ void oneFile_rm_test(void)
     int retval;
     beargit_init();
 
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
     beargit_add("test.txt");
     retval = beargit_rm("test.txt");
     CU_ASSERT(0==retval);
@@ -284,6 +292,25 @@ void oneFile_rm_test(void)
 }
 
 
+/* Simple test of the Beargit Status Command.
+ * Reads 
+ */
+void setup_function(void)
+{       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    beargit_init();
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
+    FILE* test2 = fopen("test2.txt", "w");
+    fclose(test2);
+    beargit_add("test.txt");
+    beargit_add("test2.txt");
+    beargit_commit("THIS IS BEAR TERRITORY!");
+ }
+
+
 /* The main() function for setting up and running the tests.
  * Returns a CUE_SUCCESS on successful running, another
  * CUnit error code on failure.
@@ -293,6 +320,7 @@ int cunittester()
    CU_pSuite pSuite = NULL;  /* Sample code provided with skeleton */
    CU_pSuite pSuite2 = NULL; /* Suite of testing for the STATUS command */
    CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
+   CU_pSuite pSetup = NULL; /* Autoloads beargit in a state ready for manual testing */
 
    // CU_pSuite pSuite2 = NULL;  /* Sample code provided with skeleton */
 
@@ -346,6 +374,23 @@ int cunittester()
    }
    /* Add tests to the RM Suite */
    if (NULL == CU_add_test(pSuite3, "RM Test #1: one file to remove test", oneFile_rm_test))
+    /* Edge cases still to test: No files to remove, file isn't being tracked, */
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+
+///////////////
+
+   /* add SETUP to the registry */
+   pSetup = CU_add_suite("Setup Function", init_suite, clean_suite);
+   if (NULL == pSetup) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+   /* Add tests to the RM Suite */
+   if (NULL == CU_add_test(pSetup, "Running commands to leave beargit in testing state", setup_function))
     /* Edge cases still to test: No files to remove, file isn't being tracked, */
    {
       CU_cleanup_registry();

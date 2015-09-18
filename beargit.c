@@ -197,10 +197,10 @@ void next_commit_id(char* commit_id) {
   strtok(branch_name, "\n");
   
   strcat(line, branch_name);
-      fprintf(stdout, "\n%s sent to cryptohash.\n", line);     /* DELETE ME WHEN WORKING*/
+      // fprintf(stdout, "FUNCTION: next_commit_id:\n-----------------------\n%s sent to cryptohash.\n", line);     /* DELETE ME WHEN WORKING*/
   
   cryptohash(line, dst);
-      fprintf(stdout, "\n%s received from cryptohash. \n", dst);     /* DELETE ME WHEN WORKING*/
+      // fprintf(stdout, "%s received from cryptohash. \n", dst);     /* DELETE ME WHEN WORKING*/
 
   fprintf(fnewCommit, "%s\n", dst);
   fclose(fprevCommit);
@@ -215,18 +215,76 @@ int beargit_commit(const char* msg) {
   }
 
   char commit_id[COMMIT_ID_SIZE];
-
   read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
   next_commit_id(commit_id);
 
+  /* read the new commit hash and save it as a local variable*/
   FILE *fpassedCommit = fopen(".beargit/.newCommit", "r");
   char new_hash[COMMIT_ID_SIZE];
   fgets(new_hash, sizeof(new_hash), fpassedCommit);
+  fclose(fpassedCommit);                                         /* change to write to string if it worsks */
+  fs_rm(".beargit/.newCommit");
   strtok(new_hash, "\n");
-
-  fprintf(stdout, "\n%s received from next_commit_id. \n", new_hash);     /* DELETE ME WHEN WORKING*/
+  // fprintf(stdout, "\n\nFUNCTION: beargit_commit:\n-----------------------\n%s read in next_commit_id. \n", new_hash);     /* DELETE ME WHEN WORKING*/
   
-  fclose(fpassedCommit);
+  /* make a new directory for the commit and save the commit message*/
+  char new_commit_name[BRANCHNAME_SIZE];
+  strcpy(new_commit_name, ".beargit/");
+  strcat(new_commit_name, new_hash);
+
+  // fprintf(stdout, "\ncreating folder \n%s \n", new_commit_name);     /* DELETE ME WHEN WORKING*/
+
+  /* make a new directory for the commit and save the commit message*/
+  fs_mkdir(new_commit_name);
+  char new_msg[BRANCHNAME_SIZE];
+  strcpy(new_msg, new_commit_name);
+  strcat(new_msg, "/.msg");
+  FILE* fmsg = fopen(new_msg, "w");                            /* change to write to string if it worsks */
+  fprintf(fmsg, "%s\n", msg);
+  fclose(fmsg);
+
+  /* copy over .index file and all tracked files that are listed in it*/
+  char new_index[BRANCHNAME_SIZE];
+  strcpy(new_index, new_commit_name);
+  strcat(new_index, "/.index");                               /* THIS NEEDS CHANGING TO AN IF STATMENT FOR PREV COMMIT NAME */
+  fs_cp(".beargit/.index", new_index);
+  // fprintf(stdout, "\n%s saved.\n", new_index);                 /* DELETE ME WHEN WORKING*/
+
+  FILE* findex = fopen(new_index, "r");
+  char line[FILENAME_SIZE];
+  int count = 0;
+  char path[FILENAME_SIZE];
+  while(fgets(line, sizeof(line), findex)) {
+    count++;
+    strtok(line, "\n");
+    memset(path, 0, sizeof(path));
+    strcpy(path, new_commit_name);
+    strcat(path, "/");
+    strcat(path, line); 
+    fs_cp(line, path);
+    // fprintf(stdout, "\n%s saved.", path);                      /* DELETE ME WHEN WORKING*/
+  }
+
+  // fprintf(stdout, "\n%d tracked files copied across.\n", count);   /* DELETE ME WHEN WORKING*/
+
+
+  /* copy over .prev file and (over)write the new commit ID into it*/
+  char new_prev[BRANCHNAME_SIZE];
+  strcpy(new_prev, new_commit_name);
+  strcat(new_prev, "/.prev");
+  fs_cp(".beargit/.prev", new_prev);
+  // fprintf(stdout, "\n%s saved.", new_prev);                      /* DELETE ME WHEN WORKING*/
+  write_string_to_file(".beargit/.prev", new_hash);
+  // fprintf(stdout, "\n%s (over)written to .beargit/.prev.", new_hash);    /* DELETE ME WHEN WORKING*/
+
+
+
+  // FILE* fbranches = fopen(".beargit/.branches", "w");
+  // fclose(fbranches);
+
+  // write_string_to_file(".beargit/.prev", "0000000000000000000000000000000000000000");
+  // write_string_to_file(".beargit/.current_branch", "master");
+
   /* COMPLETE THE REST */
 
  
