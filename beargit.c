@@ -257,7 +257,7 @@ int beargit_commit(const char* msg) {
   while(fgets(line, sizeof(line), findex)) {
     count++;
     strtok(line, "\n");
-    memset(path, 0, sizeof(path));
+    memset(path, 0, sizeof(path));                            /* MEMORY LEAK HERE? BETTER WAY OF DOING IT IN THE STACK?*/
     strcpy(path, new_commit_name);
     strcat(path, "/");
     strcat(path, line); 
