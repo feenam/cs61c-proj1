@@ -209,14 +209,34 @@ void next_commit_id(char* commit_id) {
 
 
 int beargit_commit(const char* msg) {
+  /* check that the commit message is okay with is_commit_msg_okay function */
   if (!is_commit_msg_ok(msg)) {
     fprintf(stderr, "ERROR:  Message must contain \"%s\"\n", go_bears);
     return 1;
   }
 
+  /* check that you are on the head of the branch */
   char commit_id[COMMIT_ID_SIZE];
+  char* initial_commit = "0000000000000000000000000000000000000000";
   read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
-  next_commit_id(commit_id);
+
+  char branch_file[BRANCHNAME_SIZE];
+  char branch_name[BRANCHNAME_SIZE];
+  read_string_from_file(".beargit/.current_branch", branch_name, BRANCHNAME_SIZE);
+  sprintf(branch_file, ".beargit/.branch_%s", branch_name);  
+
+  if (*commit_id != *initial_commit){
+    char branch_head_commit_id[COMMIT_ID_SIZE];
+    read_string_from_file(branch_file, branch_head_commit_id, COMMIT_ID_SIZE);
+
+    if (*commit_id != *branch_head_commit_id) {
+      fprintf(stderr, "ERROR:  Need to be on HEAD of a branch to commit");
+      return 1;
+    }
+  }
+
+  /* get the next commit ID with the next_commit_id function*/
+  next_commit_id(commit_id);                                      /* CHANGE THIS TO A POINTER SO IT CAN BE UPDATED WITHOUT A STRING BUFFER?*/
 
   /* read the new commit hash and save it as a local variable*/
   FILE *fpassedCommit = fopen(".beargit/.newCommit", "r");
@@ -228,27 +248,24 @@ int beargit_commit(const char* msg) {
   // fprintf(stdout, "\n\nFUNCTION: beargit_commit:\n-----------------------\n%s read in next_commit_id. \n", new_hash);     /* DELETE ME WHEN WORKING*/
   
   /* make a new directory for the commit and save the commit message*/
-  char new_commit_name[BRANCHNAME_SIZE];
-  strcpy(new_commit_name, ".beargit/");
-  strcat(new_commit_name, new_hash);
+  char new_commit_name[BRANCHNAME_SIZE+50];
+  sprintf(new_commit_name, ".beargit/%s", new_hash);
 
-  // fprintf(stdout, "\ncreating folder \n%s \n", new_commit_name);     /* DELETE ME WHEN WORKING*/
+  fprintf(stdout, "\ncreating folder \n%s \n", new_commit_name);     /* DELETE ME WHEN WORKING*/
 
   /* make a new directory for the commit and save the commit message*/
   fs_mkdir(new_commit_name);
   char new_msg[BRANCHNAME_SIZE];
-  strcpy(new_msg, new_commit_name);
-  strcat(new_msg, "/.msg");
+  sprintf(new_msg, "%s/.msg", new_commit_name);
   FILE* fmsg = fopen(new_msg, "w");                            /* change to write to string if it worsks */
   fprintf(fmsg, "%s\n", msg);
   fclose(fmsg);
 
   /* copy over .index file and all tracked files that are listed in it*/
   char new_index[BRANCHNAME_SIZE];
-  strcpy(new_index, new_commit_name);
-  strcat(new_index, "/.index");                               /* THIS NEEDS CHANGING TO AN IF STATMENT FOR PREV COMMIT NAME */
+  sprintf(new_index, "%s/.index", new_commit_name);                            /* THIS NEEDS CHANGING TO AN IF STATMENT FOR PREV COMMIT NAME */
   fs_cp(".beargit/.index", new_index);
-  // fprintf(stdout, "\n%s saved.\n", new_index);                 /* DELETE ME WHEN WORKING*/
+  fprintf(stdout, "\n%s saved.\n", new_index);                 /* DELETE ME WHEN WORKING*/
 
   FILE* findex = fopen(new_index, "r");
   char line[FILENAME_SIZE];
@@ -258,42 +275,27 @@ int beargit_commit(const char* msg) {
     count++;
     strtok(line, "\n");
     memset(path, 0, sizeof(path));                            /* MEMORY LEAK HERE? BETTER WAY OF DOING IT IN THE STACK?*/
-    strcpy(path, new_commit_name);
-    strcat(path, "/");
+    sprintf(path, "%s/", new_commit_name);
     strcat(path, line); 
     fs_cp(line, path);
-    // fprintf(stdout, "\n%s saved.", path);                      /* DELETE ME WHEN WORKING*/
+    fprintf(stdout, "\n%s saved.", path);                      /* DELETE ME WHEN WORKING*/
   }
 
-  // fprintf(stdout, "\n%d tracked files copied across.\n", count);   /* DELETE ME WHEN WORKING*/
+  fprintf(stdout, "\n%d tracked files copied across.\n", count);   /* DELETE ME WHEN WORKING*/
 
 
   /* copy over .prev file and (over)write the new commit ID into it*/
   char new_prev[BRANCHNAME_SIZE];
-  strcpy(new_prev, new_commit_name);
-  strcat(new_prev, "/.prev");
+  sprintf(new_prev, "%s/.prev", new_commit_name);
   fs_cp(".beargit/.prev", new_prev);
-  // fprintf(stdout, "\n%s saved.", new_prev);                      /* DELETE ME WHEN WORKING*/
+  fprintf(stdout, "\n%s saved.", new_prev);                      /* DELETE ME WHEN WORKING*/
   write_string_to_file(".beargit/.prev", new_hash);
-  // fprintf(stdout, "\n%s (over)written to .beargit/.prev.", new_hash);    /* DELETE ME WHEN WORKING*/
+  fprintf(stdout, "\n%s (over)written to .beargit/.prev.", new_hash);    /* DELETE ME WHEN WORKING*/
 
 
-
-  // FILE* fbranches = fopen(".beargit/.branches", "w");
-  // fclose(fbranches);
-
-  // write_string_to_file(".beargit/.prev", "0000000000000000000000000000000000000000");
-  // write_string_to_file(".beargit/.current_branch", "master");
-
-  /* COMPLETE THE REST */
-
- 
-
-
-  // if (branch_head_commit_id == commit_id) {
-    // WRITE A CHECK TO SEE IF THE BRANCH HEAD IS THE SAME AS CURRENT COMMIT ID
-    // fprintf(stderr, "ERROR:  Need to be on HEAD of a branch to commit");
-  // }
+  /* create .branch_<branchname> and copy over .prev file */
+  fs_cp(".beargit/.prev", branch_file);
+  fprintf(stdout, "\n%s saved.", branch_file);                      /* DELETE ME WHEN WORKING*/
 
   return 0;
 }
