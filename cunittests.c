@@ -115,6 +115,8 @@ void simple_log_test(void)
       // Second line is msg
       sprintf(refline, "   %s\n", cur_commit->msg);
       CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+      // fprintf(stdout, "\nline:   %s", line);                     /* DELETE ME WHEN WORKING*/
+      // fprintf(stdout, "refline: %s", refline);                     /* DELETE ME WHEN WORKING*/
       CU_ASSERT_STRING_EQUAL(line, refline);
 
       // Third line is empty
@@ -303,11 +305,18 @@ void setup_function(void)
     beargit_init();
     FILE* test = fopen("test.txt", "w");
     fclose(test);
+    beargit_add("test.txt");
+    beargit_commit("THIS IS BEAR TERRITORY!");
+    beargit_checkout("2nd", 1);
     FILE* test2 = fopen("test2.txt", "w");
     fclose(test2);
-    beargit_add("test.txt");
     beargit_add("test2.txt");
     beargit_commit("THIS IS BEAR TERRITORY!");
+
+    // FILE* test3 = fopen("test3.txt", "w");
+    // beargit_add("test3.txt");
+    // beargit_commit("THIS IS BEAR TERRITORY!");
+    // beargit_checkout("master", 0);
  }
 
 
@@ -317,10 +326,12 @@ void setup_function(void)
  */
 int cunittester()
 {
-   CU_pSuite pSuite = NULL;  /* Sample code provided with skeleton */
+   CU_pSuite pSuite = NULL;  /* Sample#1 code provided with skeleton - simple test*/
    CU_pSuite pSuite2 = NULL; /* Suite of testing for the STATUS command */
    CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
-   CU_pSuite pSetup = NULL; /* Autoloads beargit in a state ready for manual testing */
+   CU_pSuite pSuite4 = NULL; /* Sample#2 code provided with skeleton - Log */
+   
+   // CU_pSuite pSetup = NULL; /* Autoloads beargit in a state ready for manual testing */
 
    // CU_pSuite pSuite2 = NULL;  /* Sample code provided with skeleton */
 
@@ -346,6 +357,7 @@ int cunittester()
       return CU_get_error();
    }
 
+
 ///////////////
 
    /* add STATUS Suite to the registry */
@@ -363,6 +375,7 @@ int cunittester()
       CU_cleanup_registry();
       return CU_get_error();
    }
+
 
 ///////////////
 
@@ -383,37 +396,39 @@ int cunittester()
 
 ///////////////
 
-   /* add SETUP to the registry */
-   pSetup = CU_add_suite("Setup Function", init_suite, clean_suite);
-   if (NULL == pSetup) {
+   /* add SAMPLE Suite #2 to the registry */
+   pSuite4 = CU_add_suite("Sample Suite_2", init_suite, clean_suite);
+   if (NULL == pSuite4) {
       CU_cleanup_registry();
       return CU_get_error();
    }
-   /* Add tests to the RM Suite */
-   if (NULL == CU_add_test(pSetup, "Running commands to leave beargit in testing state", setup_function))
-    /* Edge cases still to test: No files to remove, file isn't being tracked, */
+
+   /* Add tests to the sample Suite #2 */
+   if (NULL == CU_add_test(pSuite4, "Log output test", simple_log_test))
    {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
 
+///////////////
 
-
-   // /* add sample Suite #2 to the registry */
-   // pSuite2 = CU_add_suite("Sample Suite_2", init_suite, clean_suite);
-   // if (NULL == pSuite2) {
+   // /* add SETUP to the registry */
+   // pSetup = CU_add_suite("Setup Function", init_suite, clean_suite);
+   // if (NULL == pSetup) {
    //    CU_cleanup_registry();
    //    return CU_get_error();
    // }
-
-   // /* Add tests to the sample Suite #2 */
-   // if (NULL == CU_add_test(pSuite2, "Log output test", simple_log_test))
+   // /* Add tests to the RM Suite */
+   // if (NULL == CU_add_test(pSetup, "Running commands to leave beargit in testing state", setup_function))
+   //  /* Edge cases still to test: No files to remove, file isn't being tracked, */
    // {
    //    CU_cleanup_registry();
    //    return CU_get_error();
    // }
 
+   
+      // TEST TO SEE IF CONTENTS OF TEST.TXT and TEST2.TXT are actually different when saved
 
 
    /* Run all tests using the CUnit Basic interface */
