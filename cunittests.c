@@ -80,8 +80,7 @@ void run_commit(struct commit** commit_list, const char* msg) {
     *commit_list = new_commit;
 }
 
-void simple_log_test(void)
-{
+void simple_log_test(void) {
     struct commit* commit_list = NULL;
     int retval;
     retval = beargit_init();
@@ -141,8 +140,7 @@ void simple_log_test(void)
  * and checks whether the expected characters are present.
  * Must be run after testFPRINTF().
  */
-void empty_status_test(void)
-{
+void empty_status_test(void) {
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
 
@@ -176,8 +174,7 @@ void empty_status_test(void)
 /* Simple test of the Beargit Status Command.
  * Reads 
  */
-void oneFile_status_test(void)
-{       
+void oneFile_status_test(void) {       
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
  
@@ -219,8 +216,7 @@ void oneFile_status_test(void)
 /* Simple test of the Beargit Status Command.
  * Reads 
  */
-void twoFile_status_test(void)
-{       
+void twoFile_status_test(void) {       
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
     
@@ -263,19 +259,71 @@ void twoFile_status_test(void)
     fclose(fstdout);
 }
 
-/* Simple test of the Beargit Status Command.
+/* Simple test of the Beargit Rm Command.
  * Reads 
  */
-void oneFile_rm_test(void)
-{       
+void noFile_rm_test(void) {       
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
 
     int retval;
     beargit_init();
 
+
+    retval = beargit_rm("false.txt");
+    CU_ASSERT(1==retval);
+    
     FILE* test = fopen("test.txt", "w");
     fclose(test);
+    beargit_add("test.txt");
+    retval = beargit_rm("false.txt");
+    CU_ASSERT(1==retval);    
+
+    beargit_add("false.txt");
+    retval = beargit_rm("false.txt");
+    CU_ASSERT(0==retval);
+    retval = beargit_rm("false.txt");
+    CU_ASSERT(1==retval);
+
+    beargit_status();
+
+    FILE* fstderr = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr);
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    CU_ASSERT(!strncmp(line,"ERROR:  File false.txt not tracked.", strlen("ERROR:  File false.txt not tracked.")));
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    CU_ASSERT(!strncmp(line,"ERROR:  File false.txt not tracked.", strlen("ERROR:  File false.txt not tracked.")));
+
+    fclose(fstderr);
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"test.txt", strlen("test.txt")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 1 files total.", strlen("There are 1 files total.")));
+    
+    fclose(fstdout);
+    beargit_rm("test.txt");
+}
+
+
+/* Simple test of the Beargit Rm Command.
+ * Reads 
+ */
+void oneFile_rm_test(void) {   
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    
     beargit_add("test.txt");
     retval = beargit_rm("test.txt");
     CU_ASSERT(0==retval);
@@ -289,16 +337,301 @@ void oneFile_rm_test(void)
     while (i++ < 3) fgets(line, LINE_SIZE, fstdout);
     CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
     CU_ASSERT(!strncmp(line,"There are 0 files total.", strlen("There are 0 files total.")));
-
+    
     fclose(fstdout);
+
+    int exists = access("TEST_STDERR", F_OK);
+    CU_ASSERT(-1==exists);
+
+}
+
+
+/* Simple test of the Beargit Rm Command.
+ * Reads 
+ */
+void twoFile_rm_test(void) {       
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+
+    beargit_add("test.txt");
+    retval = beargit_rm("test.txt");
+    CU_ASSERT(0==retval);
+    beargit_add("test.txt");
+    retval = beargit_rm("test.txt");
+    CU_ASSERT(0==retval);
+
+    FILE* test2 = fopen("test2.txt", "w");
+    fclose(test2);
+    beargit_add("test2.txt");
+    beargit_add("test.txt");
+    retval = beargit_rm("test2.txt");
+    CU_ASSERT(0==retval);
+
+    beargit_status();
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+
+    
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"Tracked files:", strlen("Tracked files:")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"test.txt", strlen("test.txt")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"There are 1 files total.", strlen("There are 1 files total.")));
+    fclose(fstdout);
+
+    int exists = access("TEST_STDERR", F_OK);
+    CU_ASSERT(-1==exists);
+
+}
+
+
+/* Basic test of the Beargit COMMIT Command.
+ * Reads 
+ */
+void one_empty_commit_test(void) {       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_init();
+    retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    CU_ASSERT(0==retval);
+    
+    int exists = access("TEST_STDOUT", F_OK);
+    CU_ASSERT(-1==exists);
+
+    beargit_log(10);
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout);
+    
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout));
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!", strlen("   THIS IS BEAR TERRITORY!")));
+    fclose(fstdout);
+
+    unlink("TEST_STDOUT");
+    beargit_commit("THIS IS BEAR TERRITORY!");   
+    beargit_log(10);
+
+    FILE* fstdout2 = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout2);
+    
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstdout2));
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout2);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!", strlen("   THIS IS BEAR TERRITORY!")));
+    
+    fgets(line, LINE_SIZE, fstdout2);
+    CU_ASSERT(!strncmp(line,"", strlen("")));
+    
+    fgets(line, LINE_SIZE, fstdout2);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout2);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!", strlen("   THIS IS BEAR TERRITORY!")));
+
+    exists = access("TEST_STDERR", F_OK);
+    CU_ASSERT(-1==exists);
+    
+    fclose(fstdout2);
+    init_suite();
+}
+
+
+/* Basic test of the Beargit COMMIT Command.
+ * Checks whether an added file is saved in the correct commit folders 
+ */
+void oneFile_commit_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_init();
+
+    // Empty first commit
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);
+      
+    char commit_id[COMMIT_ID_SIZE];
+    read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
+
+    // Create a file in between the two commits
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
+    beargit_add("test.txt");
+
+    // Second commit including file
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(0==retval);
+    
+    // Check that the file doesn't exist in the previous commit
+    char commit_dir_file[BRANCHNAME_SIZE];
+    sprintf(commit_dir_file, ".beargit/%s/test.txt", commit_id);
+    int exists; 
+    exists = access(commit_dir_file, F_OK);
+    CU_ASSERT(-1==exists);
+
+    // Check that the file does exist in this commit
+    read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
+    sprintf(commit_dir_file, ".beargit/%s/test.txt", commit_id);
+    exists = access(commit_dir_file, F_OK);
+    CU_ASSERT(0==exists);
+
+    beargit_log(10);
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout); 
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!2", strlen("   THIS IS BEAR TERRITORY!2")));
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!1", strlen("   THIS IS BEAR TERRITORY!1")));
+    
+    fclose(fstdout);
+    init_suite();
+}
+
+
+/* Basic test of the Beargit COMMIT Command.
+ * Reads 
+ */
+void messages_commit_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_init();
+    retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    CU_ASSERT(0==retval);
+      
+    // Check that incorrect commit messages throw error and do not create commit folders
+    char commit_id[COMMIT_ID_SIZE];
+    read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
+    retval = beargit_commit("THIS IS BEAR TERRITORY");    
+    CU_ASSERT(1==retval);
+    
+    char commit_dir[BRANCHNAME_SIZE];
+    sprintf(commit_dir, ".beargit/%s", commit_id);
+    int exists; 
+    exists = fs_check_dir_exists(commit_dir);
+    CU_ASSERT(1==exists);
+
+    beargit_commit("    THIS IS BEAR TERRITORY!    ");
+    beargit_commit("THIS THIS THIS THIS IS BEAR TERRITORY!");
+    beargit_commit("THIS IS BEAR TERRITORY!!!");
+    beargit_commit("*&$THIS IS BEAR TERRITORY!$&*");
+    beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");
+    beargit_log(5);
+
+    FILE* fstdout = fopen("TEST_STDOUT", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstdout); 
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS", strlen("   THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS")));
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   *&$THIS IS BEAR TERRITORY!$&*", strlen("   *&$THIS IS BEAR TERRITORY!$&*")));
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS IS BEAR TERRITORY!!!", strlen("   THIS IS BEAR TERRITORY!!!")));
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"   THIS THIS THIS THIS IS BEAR TERRITORY!", strlen("   THIS THIS THIS THIS IS BEAR TERRITORY!")));
+    fgets(line, LINE_SIZE, fstdout);
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"commit", strlen("commit")));
+    fgets(line, LINE_SIZE, fstdout);
+    CU_ASSERT(!strncmp(line,"       THIS IS BEAR TERRITORY!    ", strlen("       THIS IS BEAR TERRITORY!    ")));
+    
+    fclose(fstdout);
+
+    FILE* fstderr = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    CU_ASSERT(!strncmp(line,"ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"", strlen("ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"")));
+    
+    fclose(fstderr);
+
+}
+
+
+/* Basic test of the Beargit COMMIT Command.
+ * Reads 
+ */
+void headbranch_commit_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    beargit_branch();
+    beargit_checkout("77dcbd31e7237ce30d041dd3857381401c7996c0", 0);
+    // beargit_branch();
+    // retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    // CU_ASSERT(1==retval);
+    // FILE* fstderr = fopen("TEST_STDERR", "r");
+    // CU_ASSERT_PTR_NOT_NULL(fstderr);
+    // CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    // CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    // CU_ASSERT(!strncmp(line,"ERROR:  Need to be on HEAD of a branch to commit.", strlen("ERROR:  Need to be on HEAD of a branch to commit.")));
+    
+    // fclose(fstderr);
+
+    // retval = beargit_commit("THIS IS BEAR!");    
+    // CU_ASSERT(1==retval);
+
+    // retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    // CU_ASSERT(1==retval);
+
+    // // Check that you cannot create a commit even if you checkout the commit id that's the head of the branch
+    // beargit_checkout("9a3cd068a5be9fbd2069ee50c166b9d1cff13049", 0);
+    // retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
+    // CU_ASSERT(1==retval);
+
+    // // Check that switching back to the head of the branch re-enables commit
+    // beargit_checkout("master", 0);
+    // beargit_branch();
+    // retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
+    // CU_ASSERT(0==retval);
+    
 }
 
 
 /* Simple test of the Beargit Status Command.
  * Reads 
  */
-void setup_function(void)
-{       
+void setup_function(void) {       
     const int LINE_SIZE = 512;
     char line[LINE_SIZE];
 
@@ -327,13 +660,12 @@ void setup_function(void)
 int cunittester()
 {
    CU_pSuite pSuite = NULL;  /* Sample#1 code provided with skeleton - simple test*/
+   CU_pSuite pSuite1 = NULL; /* Sample#2 code provided with skeleton - Log */
    CU_pSuite pSuite2 = NULL; /* Suite of testing for the STATUS command */
-   CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
-   CU_pSuite pSuite4 = NULL; /* Sample#2 code provided with skeleton - Log */
+   // CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
+   CU_pSuite pSuite4 = NULL; /* Suite of testing for the COMMIT command */
    
    // CU_pSuite pSetup = NULL; /* Autoloads beargit in a state ready for manual testing */
-
-   // CU_pSuite pSuite2 = NULL;  /* Sample code provided with skeleton */
 
 
    /* initialize the CUnit test registry */
@@ -352,6 +684,23 @@ int cunittester()
 
    /* Add tests to the SAMPLE Suite #1 */
    if (NULL == CU_add_test(pSuite, "Simple Test #1", simple_sample_test))
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+
+///////////////
+
+   /* add SAMPLE Suite #2 to the registry */
+   pSuite1 = CU_add_suite("Sample Suite_2", init_suite, clean_suite);
+   if (NULL == pSuite1) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+   /* Add tests to the sample Suite #2 */
+   if (NULL == CU_add_test(pSuite1, "Log output test", simple_log_test))
    {
       CU_cleanup_registry();
       return CU_get_error();
@@ -379,39 +728,64 @@ int cunittester()
 
 ///////////////
 
-   /* add RM Suite to the registry */
-   pSuite3 = CU_add_suite("RM Suite", init_suite, clean_suite);
-   if (NULL == pSuite3) {
+   // /* add RM Suite to the registry */
+   // pSuite3 = CU_add_suite("RM Suite", init_suite, clean_suite);
+   // if (NULL == pSuite3) {
+   //    CU_cleanup_registry();
+   //    return CU_get_error();
+   // }
+   // /* Add tests to the RM Suite */
+   // if ((NULL == CU_add_test(pSuite3, "RM Test #1: no files to remove test", noFile_rm_test)) ||
+   //     (NULL == CU_add_test(pSuite3, "RM Test #2: one file to remove test", oneFile_rm_test)) ||
+   //     (NULL == CU_add_test(pSuite3, "RM Test #3: two files to remove test", twoFile_rm_test)))
+   // {
+   //    CU_cleanup_registry();
+   //    return CU_get_error();
+   // }
+
+///////////////
+
+
+   /* add COMMIT Suite to the registry */
+   pSuite4 = CU_add_suite("COMMIT Suite", init_suite, clean_suite);
+   if (NULL == pSuite4) {
       CU_cleanup_registry();
       return CU_get_error();
    }
-   /* Add tests to the RM Suite */
-   if (NULL == CU_add_test(pSuite3, "RM Test #1: one file to remove test", oneFile_rm_test))
+   /* Add tests to the COMMIT Suite */
+   if ((NULL == CU_add_test(pSuite4, "COMMIT Test #1: Basic one empty commit test", one_empty_commit_test)) ||
+       (NULL == CU_add_test(pSuite4, "COMMIT Test #2: One file commited test", oneFile_commit_test)) ||
+       (NULL == CU_add_test(pSuite4, "COMMIT Test #3: Different commit messages test", messages_commit_test)) ||
+       (NULL == CU_add_test(pSuite4, "COMMIT Test #4: On head of the branch test", headbranch_commit_test)))
     /* Edge cases still to test: No files to remove, file isn't being tracked, */
    {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-
 ///////////////
 
-   /* add SAMPLE Suite #2 to the registry */
-   pSuite4 = CU_add_suite("Sample Suite_2", init_suite, clean_suite);
-   if (NULL == pSuite4) {
-      CU_cleanup_registry();
-      return CU_get_error();
-   }
 
-   /* Add tests to the sample Suite #2 */
-   if (NULL == CU_add_test(pSuite4, "Log output test", simple_log_test))
-   {
-      CU_cleanup_registry();
-      return CU_get_error();
-   }
+   // RM:
+      // No files to remove, file isn't being tracked
+   // Commit:
+      // test different messages ie:  THIS G THIS IS... 
+      // test !
+      // on head of branch?
 
+   // Checkout:
+      // TEST TO SEE IF CONTENTS OF TEST.TXT and TEST2.TXT are actually different when saved
+      // swap between branches with no commit
+      // test detached 
 
-///////////////
+   // Log:
+
+   // Branch:
+
+   // Reset:
+
+   // Merge:
+
 
    // /* add SETUP to the registry */
    // pSetup = CU_add_suite("Setup Function", init_suite, clean_suite);
@@ -428,7 +802,6 @@ int cunittester()
    // }
 
    
-      // TEST TO SEE IF CONTENTS OF TEST.TXT and TEST2.TXT are actually different when saved
 
 
    /* Run all tests using the CUnit Basic interface */

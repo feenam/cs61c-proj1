@@ -168,9 +168,19 @@ int is_commit_msg_ok(const char* msg) {
   do {
     msg_char = msg[i];
     go_char = go_bears[j];
-    if (go_char == '\0') return 1;
-    if (msg_char == go_char) j++;
-    else j = 0;
+    if (go_char == '\0') {
+      return 1;
+    }
+    if (msg_char == go_char) {
+      j++;
+    }
+    else {
+      j = 0;
+      // Account for reset shaving first letter off
+      if (msg[i] == go_bears[j]){
+        i--;
+      }
+    }
     i++;
   } while (msg_char != '\0'); 
   
@@ -225,22 +235,36 @@ int beargit_commit(const char* msg) {
   read_string_from_file(".beargit/.prev", commit_id, COMMIT_ID_SIZE);
   char* initial_commit = "0000000000000000000000000000000000000000";
 
-  char branch_file[BRANCHNAME_SIZE];
   char branch_name[BRANCHNAME_SIZE];
+  char branch_file[BRANCHNAME_SIZE];
   read_string_from_file(".beargit/.current_branch", branch_name, BRANCHNAME_SIZE);
   sprintf(branch_file, ".beargit/.branch_%s", branch_name);  
 
-  if (*commit_id != *initial_commit){
-    char branch_head_commit_id[COMMIT_ID_SIZE];
-    read_string_from_file(branch_file, branch_head_commit_id, COMMIT_ID_SIZE);
-
-    if (*commit_id != *branch_head_commit_id) {
-      fprintf(stderr, "ERROR:  Need to be on HEAD of a branch to commit");
+  // fprintf(stdout, "\ncommit_id =      %s\n", commit_id);                 /* DELETE ME WHEN WORKING*/
+  // fprintf(stdout, "initial_commit = %s\n", initial_commit);                 /* DELETE ME WHEN WORKING*/
+  
+  // Check we're not dealing with the initial commit
+  if (strcmp(commit_id, initial_commit)){
+    // char branch_head_commit_id[COMMIT_ID_SIZE];
+    // read_string_from_file(branch_file, branch_head_commit_id, COMMIT_ID_SIZE);
+    
+  // Check on head of the branch before allowing commit
+    if (strlen(branch_name) < 3 ) {
+      fprintf(stderr, "ERROR:  Need to be on HEAD of a branch to commit.");
       return 1;
     }
-  /* cover for special case where checkout occurs before .branch_master is accounted for*/
-  } else if (get_branch_number("master") == -1){
-    fs_cp(".beargit/.prev", ".beargit/.branch_master");    
+  /* cover for special case where checkout occurs before .branch_master is created */
+  } else {
+    FILE *fbranches = fopen(".beargit/.branches", "r");
+    int counter = 0;
+    char line[FILENAME_SIZE];
+    while(fgets(line, sizeof(line), fbranches)) {
+      counter++;
+    }
+    if (counter == 1){
+      fs_cp(".beargit/.prev", ".beargit/.branch_master");    
+    }
+    fclose(fbranches);
   }
 
   /* get the next commit ID with the next_commit_id function*/
@@ -342,17 +366,13 @@ int beargit_log(int limit) {
       fprintf(stdout, msg, BRANCHNAME_SIZE);
       fprintf(stdout, "\n");
       fprintf(stdout, "\n");
-      strcpy(temp1, ".beargit/");
-      strcat(temp1, commit_id);
-      strcpy(temp2, temp1);
-      strcat(temp1, "/.prev");
-      strcat(temp2, "/.msg");
+      sprintf(temp1, ".beargit/%s/.prev", commit_id);
       read_string_from_file(temp1, commit_id, COMMIT_ID_SIZE);
+      sprintf(temp2, ".beargit/%s/.msg", commit_id);
       
       if (strcmp(commit_id, "0000000000000000000000000000000000000000") == 0) {
         cond = -1;
       }
-      read_string_from_file(temp2, msg, BRANCHNAME_SIZE);
     }
     count++;
   }
@@ -652,11 +672,11 @@ int beargit_checkout(const char* arg, int new_branch) {
 
   write_string_to_file(".beargit/.current_branch", branch_name);
 
-  /* if branch's head is the 00.0 commit */
-  char master_dir[FILENAME_SIZE] = ".beargit/branch_master";
-  if (!fs_check_dir_exists(master_dir)) {
+  // /* if branch's head is the 00.0 commit */
+  // char master_dir[FILENAME_SIZE] = ".beargit/branch_master";
+  // if (!fs_check_dir_exists(master_dir)) {
 
-  }
+  // }
 
   // Read the head commit ID of this branch.
   char branch_head_commit_id[COMMIT_ID_SIZE];
@@ -665,6 +685,8 @@ int beargit_checkout(const char* arg, int new_branch) {
   // Check out the actual commit.
   return checkout_commit(branch_head_commit_id);
 }
+
+
 
 /* beargit reset
  *
