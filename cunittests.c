@@ -364,7 +364,7 @@ void twoFile_rm_test(void) {
     retval = beargit_rm("test.txt");
     CU_ASSERT(0==retval);
 
-    FILE* test2 = fopen("test2.txt", "w");
+    FILE* test2 = fopen("test2.txt", "r");
     fclose(test2);
     beargit_add("test2.txt");
     beargit_add("test.txt");
@@ -524,6 +524,10 @@ void messages_commit_test(void) {
 
     int retval;
     beargit_init();
+    // Add a file 
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
+    beargit_add("test.txt");
     retval = beargit_commit("THIS IS BEAR TERRITORY!");    
     CU_ASSERT(0==retval);
       
@@ -597,34 +601,307 @@ void headbranch_commit_test(void) {
     int retval;
     beargit_branch();
     beargit_checkout("77dcbd31e7237ce30d041dd3857381401c7996c0", 0);
-    // beargit_branch();
-    // retval = beargit_commit("THIS IS BEAR TERRITORY!");    
-    // CU_ASSERT(1==retval);
-    // FILE* fstderr = fopen("TEST_STDERR", "r");
-    // CU_ASSERT_PTR_NOT_NULL(fstderr);
-    // CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
-    // CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
-    // CU_ASSERT(!strncmp(line,"ERROR:  Need to be on HEAD of a branch to commit.", strlen("ERROR:  Need to be on HEAD of a branch to commit.")));
+    beargit_branch();
+    retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    CU_ASSERT(1==retval);
+    FILE* fstderr = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    CU_ASSERT(!strncmp(line,"ERROR:  Need to be on HEAD of a branch to commit.", strlen("ERROR:  Need to be on HEAD of a branch to commit.")));
+    fclose(fstderr);
+
+    retval = beargit_commit("THIS IS BEAR!");    
+    CU_ASSERT(1==retval);
+
+    retval = beargit_commit("THIS IS BEAR TERRITORY!");    
+    CU_ASSERT(1==retval);
+
+    // Check that you cannot create a commit even if you checkout the commit id that's the head of the branch
+    beargit_checkout("9a3cd068a5be9fbd2069ee50c166b9d1cff13049", 0);
+    retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
+    CU_ASSERT(1==retval);
+
+    // Check that switching back to the head of the branch re-enables commit
+    beargit_checkout("master", 0);
+    beargit_branch();
+    retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
+    CU_ASSERT(0==retval);
     
-    // fclose(fstderr);
+}
 
-    // retval = beargit_commit("THIS IS BEAR!");    
-    // CU_ASSERT(1==retval);
+/* Basic test of the Beargit CHECKOUT Command.
+ * Checks whether an added file has differing saved changes on different branches 
+ */
+void one_file_checkout_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
 
-    // retval = beargit_commit("THIS IS BEAR TERRITORY!");    
-    // CU_ASSERT(1==retval);
+    int retval;
+    beargit_init();
 
-    // // Check that you cannot create a commit even if you checkout the commit id that's the head of the branch
-    // beargit_checkout("9a3cd068a5be9fbd2069ee50c166b9d1cff13049", 0);
-    // retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
-    // CU_ASSERT(1==retval);
+    // Write "Simon" to text file
+    FILE* test = fopen("test.txt", "w");
+    fclose(test);
+    write_string_to_file("test.txt", "Simon");
+    beargit_add("test.txt");
 
-    // // Check that switching back to the head of the branch re-enables commit
-    // beargit_checkout("master", 0);
-    // beargit_branch();
-    // retval = beargit_commit("THIS IS THIS IS BEAR TERRITORY!TERRITORY BEAR IS THIS");    
-    // CU_ASSERT(0==retval);
+    // first commit before branching
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);
+      
+    // Check "Simon" in in text file
+    FILE* ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Simon", strlen("Simon")));
+    fclose(ftext);
+
+    // Checkout new branch
+    beargit_checkout("2nd", 1);
+
+    // Change text file to "Daniel" and commit the change
+    write_string_to_file("test.txt", "Daniel");
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);
+
+    // Check "Daniel" in in text file
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Daniel", strlen("Daniel")));
+    fclose(ftext);
     
+    // Checkout back to master branch
+    beargit_checkout("master", 0);
+
+    // Check "Simon" in in text file
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Simon", strlen("Simon")));
+    fclose(ftext);
+
+    // Checkout back to new branch
+    beargit_checkout("2nd", 0);
+
+    // Check "Daniel" in in text file
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Daniel", strlen("Daniel")));
+    fclose(ftext);
+
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);    
+
+    // Check "Daniel" in in text file
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Daniel", strlen("Daniel")));
+    fclose(ftext);
+
+    write_string_to_file("test.txt", "Daniel1");
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);    
+    
+    // Check the previous commit
+    char prev[LINE_SIZE];
+    read_string_from_file(".beargit/.prev", prev, LINE_SIZE);
+    beargit_checkout(prev, 0);
+
+    // Check "Daniel" in in text file
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Daniel", strlen("Daniel")));
+    fclose(ftext);
+  
+    // Checkout back to new branch head
+    beargit_checkout("2nd", 0);
+    ftext = fopen("test.txt", "r");
+    CU_ASSERT_PTR_NOT_NULL(ftext); 
+    fgets(line, LINE_SIZE, ftext);
+    CU_ASSERT(!strncmp(line,"Daniel1", strlen("Daniel1")));
+    fclose(ftext);
+
+    init_suite();
+}
+
+
+/* Test of the Beargit CHECKOUT Command.
+ * Checks whether an added files change on different branches 
+ */
+void three_files_checkout_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    int exists;
+    beargit_init();
+
+    // Add a file 
+    FILE* fone = fopen("1.txt", "w");
+    fclose(fone);
+    beargit_add("1.txt");
+
+    // first commit 
+    retval = beargit_commit("THIS IS BEAR TERRITORY!1");    
+    CU_ASSERT(0==retval);
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(-1==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(-1==exists);
+
+    // Checkout new branch
+    beargit_checkout("2nd", 1);
+
+    // Add another file and commit the change
+    FILE* ftwo = fopen("2.txt", "w");
+    fclose(ftwo);
+    beargit_add("2.txt");
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(0==retval);
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(-1==exists);
+
+    // Checkout new branch
+    beargit_checkout("3rd", 1);
+
+    // Add another file and commit the change
+    FILE* fthree = fopen("3.txt", "w");
+    fclose(fthree);
+    beargit_add("3.txt");
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(0==retval);
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(0==exists);
+    
+    // Checkout back to 2nd branch
+    beargit_checkout("2nd", 0);
+
+    // Check that only 2 files exist
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(-1==exists);   
+    
+    // Check the previous commit
+    char prev[LINE_SIZE];
+    read_string_from_file(".beargit/.prev", prev, LINE_SIZE);
+    beargit_checkout(prev, 0);
+
+     // Check that only 2 files exist
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(-1==exists);   
+  
+    // Check the master commit
+    beargit_checkout("master", 0);
+
+     // Check that only 2 files exist
+    exists = access("1.txt", F_OK);
+    CU_ASSERT(0==exists);
+    exists = access("2.txt", F_OK);
+    CU_ASSERT(-1==exists);
+    exists = access("3.txt", F_OK);
+    CU_ASSERT(-1==exists);   
+
+    init_suite();
+}
+
+
+
+/* Test of the Beargit CHECKOUT Command.
+ * Checks whether the appropriate error messages are triggered 
+ */
+void errors_checkout_test(void) {
+    unlink("TEST_STDOUT");
+    unlink("TEST_STDERR");       
+    const int LINE_SIZE = 512;
+    char line[LINE_SIZE];
+
+    int retval;
+    int exists;
+    beargit_init();
+
+    // Checkout new branch
+    beargit_checkout("2nd", 1);
+
+    // Add a file 
+    FILE* fone = fopen("1.txt", "w");
+    fclose(fone);
+    beargit_add("1.txt");
+
+    // Add another file and commit the change
+    FILE* ftwo = fopen("2.txt", "w");
+    fclose(ftwo);
+    beargit_add("2.txt");
+    retval = beargit_commit("TH1S 1S BE4R T3RR1T0RY!");    
+    CU_ASSERT(1==retval);
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(0==retval);
+
+    FILE* fstderr = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr));
+    CU_ASSERT(!strncmp(line,"ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"", strlen("ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"")));
+    fclose(fstderr);
+
+    // Checkout the previous commit
+    char prev[LINE_SIZE];
+    read_string_from_file(".beargit/.prev", prev, LINE_SIZE);
+    beargit_checkout(prev, 0);
+
+    // Try to commit from a detached branch 
+    unlink("TEST_STDERR"); 
+    retval = beargit_commit("TH1S 1S BE4R T3RR1T0RY!");    
+    CU_ASSERT(1==retval);
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(1==retval);
+
+    FILE* fstderr2 = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr2);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr2));
+    CU_ASSERT(!strncmp(line,"ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"", strlen("ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"")));
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr2));
+    CU_ASSERT(!strncmp(line,"ERROR:  Need to be on HEAD of a branch to commit.", strlen("ERROR:  Need to be on HEAD of a branch to commit.")));
+    fclose(fstderr2);
+
+  
+    // Checkout the master commit
+    unlink("TEST_STDERR"); 
+    beargit_checkout("master", 0);
+    retval = beargit_commit("TH1S 1S BE4R T3RR1T0RY!");    
+    CU_ASSERT(1==retval);
+    retval = beargit_commit("THIS IS BEAR TERRITORY!2");    
+    CU_ASSERT(0==retval);
+ 
+    FILE* fstderr3 = fopen("TEST_STDERR", "r");
+    CU_ASSERT_PTR_NOT_NULL(fstderr3);
+    CU_ASSERT_PTR_NOT_NULL(fgets(line, LINE_SIZE, fstderr3));
+    CU_ASSERT(!strncmp(line,"ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"", strlen("ERROR:  Message must contain \"THIS IS BEAR TERRITORY!\"")));
+    fclose(fstderr3);
+    // init_suite();
 }
 
 
@@ -662,8 +939,9 @@ int cunittester()
    CU_pSuite pSuite = NULL;  /* Sample#1 code provided with skeleton - simple test*/
    CU_pSuite pSuite1 = NULL; /* Sample#2 code provided with skeleton - Log */
    CU_pSuite pSuite2 = NULL; /* Suite of testing for the STATUS command */
-   // CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
+   CU_pSuite pSuite3 = NULL; /* Suite of testing for the RM command */
    CU_pSuite pSuite4 = NULL; /* Suite of testing for the COMMIT command */
+   CU_pSuite pSuite5 = NULL; /* Suite of testing for the CHECKOUT command */
    
    // CU_pSuite pSetup = NULL; /* Autoloads beargit in a state ready for manual testing */
 
@@ -728,20 +1006,20 @@ int cunittester()
 
 ///////////////
 
-   // /* add RM Suite to the registry */
-   // pSuite3 = CU_add_suite("RM Suite", init_suite, clean_suite);
-   // if (NULL == pSuite3) {
-   //    CU_cleanup_registry();
-   //    return CU_get_error();
-   // }
-   // /* Add tests to the RM Suite */
-   // if ((NULL == CU_add_test(pSuite3, "RM Test #1: no files to remove test", noFile_rm_test)) ||
-   //     (NULL == CU_add_test(pSuite3, "RM Test #2: one file to remove test", oneFile_rm_test)) ||
-   //     (NULL == CU_add_test(pSuite3, "RM Test #3: two files to remove test", twoFile_rm_test)))
-   // {
-   //    CU_cleanup_registry();
-   //    return CU_get_error();
-   // }
+   /* add RM Suite to the registry */
+   pSuite3 = CU_add_suite("RM Suite", init_suite, clean_suite);
+   if (NULL == pSuite3) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+   /* Add tests to the RM Suite */
+   if ((NULL == CU_add_test(pSuite3, "RM Test #1: no files to remove test", noFile_rm_test)) ||
+       (NULL == CU_add_test(pSuite3, "RM Test #2: one file to remove test", oneFile_rm_test)) ||
+       (NULL == CU_add_test(pSuite3, "RM Test #3: two files to remove test", twoFile_rm_test)))
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
 
 ///////////////
 
@@ -757,7 +1035,25 @@ int cunittester()
        (NULL == CU_add_test(pSuite4, "COMMIT Test #2: One file commited test", oneFile_commit_test)) ||
        (NULL == CU_add_test(pSuite4, "COMMIT Test #3: Different commit messages test", messages_commit_test)) ||
        (NULL == CU_add_test(pSuite4, "COMMIT Test #4: On head of the branch test", headbranch_commit_test)))
-    /* Edge cases still to test: No files to remove, file isn't being tracked, */
+    
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+///////////////
+
+   /* add CHECKOUT Suite to the registry */
+   pSuite5 = CU_add_suite("CHECKOUT Suite", init_suite, clean_suite);
+   if (NULL == pSuite5) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+   /* Add tests to the COMMIT Suite */
+   if ((NULL == CU_add_test(pSuite5, "CHECKOUT Test #1: Basic one file checkout test", one_file_checkout_test)) || 
+       (NULL == CU_add_test(pSuite5, "CHECKOUT Test #2: Many files checkout test", three_files_checkout_test)) ||
+       (NULL == CU_add_test(pSuite5, "COMMIT Test #4: Checkout errors test", errors_checkout_test)))
+   
    {
       CU_cleanup_registry();
       return CU_get_error();
@@ -766,17 +1062,12 @@ int cunittester()
 ///////////////
 
 
-   // RM:
-      // No files to remove, file isn't being tracked
-   // Commit:
-      // test different messages ie:  THIS G THIS IS... 
-      // test !
-      // on head of branch?
+
 
    // Checkout:
       // TEST TO SEE IF CONTENTS OF TEST.TXT and TEST2.TXT are actually different when saved
       // swap between branches with no commit
-      // test detached 
+      // test detached warning
 
    // Log:
 
@@ -801,7 +1092,6 @@ int cunittester()
    //    return CU_get_error();
    // }
 
-   
 
 
    /* Run all tests using the CUnit Basic interface */
@@ -809,6 +1099,6 @@ int cunittester()
    CU_basic_run_tests();
    CU_cleanup_registry();
    return CU_get_error();
-}
+ }
 
 
