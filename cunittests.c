@@ -1062,22 +1062,6 @@ int cunittester()
 ///////////////
 
 
-
-
-   // Checkout:
-      // TEST TO SEE IF CONTENTS OF TEST.TXT and TEST2.TXT are actually different when saved
-      // swap between branches with no commit
-      // test detached warning
-
-   // Log:
-
-   // Branch:
-
-   // Reset:
-
-   // Merge:
-
-
    // /* add SETUP to the registry */
    // pSetup = CU_add_suite("Setup Function", init_suite, clean_suite);
    // if (NULL == pSetup) {
@@ -1100,5 +1084,4 @@ int cunittester()
    CU_cleanup_registry();
    return CU_get_error();
  }
-
-
+ 
