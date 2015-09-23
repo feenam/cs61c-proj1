@@ -362,7 +362,7 @@ void twoFile_rm_test(void) {
     CU_ASSERT(0==retval);
     beargit_add("test.txt");
     retval = beargit_rm("test.txt");
-    CU_ASSERT(0==retval);
+    CU_ASSERT(0==retval); 
 
     FILE* test2 = fopen("test2.txt", "r");
     fclose(test2);
@@ -1077,11 +1077,9 @@ int cunittester()
    // }
 
 
-
    /* Run all tests using the CUnit Basic interface */
    CU_basic_set_mode(CU_BRM_VERBOSE);
    CU_basic_run_tests();
    CU_cleanup_registry();
    return CU_get_error();
  }
- 

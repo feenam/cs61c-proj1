@@ -710,7 +710,8 @@ int beargit_merge(const char* arg) {
       fclose(newindex);
       fs_mv(".beargit/.newindex", ".beargit/.index"); 
     }
-    trig = 0;
+    trig = 0; 
+    
   }
   fclose(fcomIndex);
 }
